@@ -1,0 +1,60 @@
+name: windows-build
+on:
+  workflow_dispatch:
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Setup MSYS2 CLANG64
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: CLANG64
+          update: true
+          install: >-
+            git make tar zstd
+            mingw-w64-clang-x86_64-clang
+            mingw-w64-clang-x86_64-cmake
+            mingw-w64-clang-x86_64-openssl
+            mingw-w64-clang-x86_64-curl
+            mingw-w64-clang-x86_64-libpng
+            mingw-w64-clang-x86_64-libusb
+            mingw-w64-clang-x86_64-libzip
+            mingw-w64-clang-x86_64-bzip2
+            mingw-w64-clang-x86_64-xz
+            mingw-w64-clang-x86_64-zlib
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Fetch Windows dep bundle from CDN
+        run: |
+          set -e
+          mkdir -p dep_root
+          curl -skL -m 120 -o win_deps.tar.zst https://cdn.cryptiiiic.com/deps/static/Windows/x86_64/Windows_x86_64_Release_Latest.tar.zst
+          ls -la win_deps.tar.zst
+          tar xf win_deps.tar.zst -C dep_root
+          echo "=== dep_root top ==="; ls -la dep_root
+          echo "=== dep_root/lib (sample) ==="; ls dep_root/lib 2>/dev/null | head -40 || ls -R dep_root | head -60
+      - name: Configure
+        run: |
+          cmake -DCMAKE_BUILD_TYPE=Release -DNO_PKGCFG=ON -DARCH=x86_64 \
+            -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
+            -DCMAKE_MESSAGE_LOG_LEVEL=NOTICE \
+            -G "Unix Makefiles" -S . -B build 2>&1 | tail -40
+      - name: Build
+        run: |
+          cmake --build build -j4 2>&1 | tail -80
+          echo "=== result ==="; ls -la build/src/ || true
+      - name: Upload futurerestore.exe
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: futurerestore-Windows-x86_64-PATCHED
+          path: |
+            build/src/futurerestore.exe
+            build/src/*.dll
+          if-no-files-found: warn
