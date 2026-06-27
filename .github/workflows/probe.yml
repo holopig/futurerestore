@@ -1,0 +1,22 @@
+name: probe-windows-deps
+on:
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: windows-latest
+    steps:
+      - name: Probe Cryptiiiic CDN for Windows dep bundles
+        shell: bash
+        run: |
+          set +e
+          for p in Windows Win windows mingw64 MinGW MSYS Windows_NT; do
+            for cfg in Release Debug; do
+              url="https://cdn.cryptiiiic.com/deps/static/$p/x86_64/${p}_x86_64_${cfg}_Latest.tar.zst"
+              echo "$(curl -sk -m 25 -o /dev/null -w '%{http_code} %{size_download}b' "$url")  $url"
+            done
+          done
+          echo "----- bootstrap windows? -----"
+          for b in windows_fix win_fix mingw_fix bootstrap_windows_x86_64; do
+            url="https://cdn.cryptiiiic.com/bootstrap/${b}.tar.zst"
+            echo "$(curl -sk -m 25 -o /dev/null -w '%{http_code} %{size_download}b' "$url")  $url"
+          done
