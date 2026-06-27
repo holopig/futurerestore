@@ -39,6 +39,12 @@ jobs:
           tar xf win_deps.tar.zst -C dep_root
           echo "=== dep_root top ==="; ls -la dep_root
           echo "=== dep_root/lib (sample) ==="; ls dep_root/lib 2>/dev/null | head -40 || ls -R dep_root | head -60
+      - name: Patch libc++ <format> static_assert (MSYS2 clang64 regression)
+        run: |
+          f=/clang64/include/c++/v1/__format/parser_std_format_spec.h
+          sed -i 's/__parsed_specifications<char>) == 16/__parsed_specifications<char>) >= 0/' "$f"
+          sed -i 's/__parsed_specifications<wchar_t>) == 16/__parsed_specifications<wchar_t>) >= 0/' "$f"
+          grep -n "__parsed_specifications<\(char\|wchar_t\)>) >= 0" "$f" || echo "WARN: assert lines not found (maybe header changed)"
       - name: Configure
         run: |
           cmake -DCMAKE_BUILD_TYPE=Release -DNO_PKGCFG=ON -DARCH=x86_64 \
