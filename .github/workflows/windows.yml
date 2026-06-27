@@ -14,7 +14,7 @@ jobs:
           msystem: CLANG64
           update: true
           install: >-
-            git make tar zstd
+            git make tar zstd python
             mingw-w64-clang-x86_64-clang
             mingw-w64-clang-x86_64-cmake
             mingw-w64-clang-x86_64-openssl
@@ -50,6 +50,9 @@ jobs:
           echo "=== dep_root/lib ==="; ls -la dep_root/lib | grep -iE "irecov|usb|imobile|plist|mux" || ls dep_root/lib
           echo "=== libirecovery / libusb present? ==="
           ls dep_root/lib/*irecov* dep_root/lib/*usb* 2>/dev/null || echo "(none in bundle -> using clang64 pacman libs)"
+      - name: Instrument (event logging + restore-wait guard)
+        run: |
+          python instrument.py
       - name: Configure
         run: |
           cmake -DCMAKE_BUILD_TYPE=Release -DNO_PKGCFG=ON -DARCH=x86_64 \
