@@ -1488,7 +1488,17 @@ void futurerestore::doRestore(const char *ipsw) {
 
     mutex_lock(&client->device_event_mutex);
     debug("Waiting for device to enter restore mode...\n");
-    cond_wait_timeout(&client->device_event_cond, &client->device_event_mutex, 180000);
+    // FIX: the device may already have entered restore mode while we were busy
+    // fetching the SEP ticket above. In that case the device_event_cb already
+    // set client->mode = MODE_RESTORE and signalled the cond with no waiter, so
+    // the signal was lost. Waiting unconditionally here then blocks until the
+    // NEXT event -- the device resetting out of restore mode (~100s later) --
+    // which sets mode = MODE_UNKNOWN and makes the check below fail (line 1477
+    // "Unable to place device into restore mode"). idevicerestore.c:1545 guards
+    // its own wait the same way. Only wait if we are not already in restore.
+    if (client->mode != MODE_RESTORE) {
+        cond_wait_timeout(&client->device_event_cond, &client->device_event_mutex, 180000);
+    }
     retassure((client->mode == MODE_RESTORE || (mutex_unlock(&client->device_event_mutex), 0)),
               "Unable to place device into restore mode");
     mutex_unlock(&client->device_event_mutex);
