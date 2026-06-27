@@ -55,6 +55,13 @@ jobs:
         run: |
           cmake --build build -j4 2>&1 | tail -80
           echo "=== result ==="; ls -la build/src/ || true
+      - name: Bundle dependent clang64 DLLs next to exe
+        run: |
+          cd build/src
+          ldd futurerestore.exe | awk '/clang64/{print $3}' | sort -u | while read -r dll; do
+            if [ -f "$dll" ]; then cp -v "$dll" .; fi
+          done
+          echo "=== final payload ==="; ls -la futurerestore.exe *.dll
       - name: Upload futurerestore.exe
         if: always()
         uses: actions/upload-artifact@v4
