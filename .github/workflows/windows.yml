@@ -45,6 +45,11 @@ jobs:
           sed -i 's/__parsed_specifications<char>) == 16/__parsed_specifications<char>) >= 0/' "$f"
           sed -i 's/__parsed_specifications<wchar_t>) == 16/__parsed_specifications<wchar_t>) >= 0/' "$f"
           grep -n "__parsed_specifications<\(char\|wchar_t\)>) >= 0" "$f" || echo "WARN: assert lines not found (maybe header changed)"
+      - name: List dep bundle contents
+        run: |
+          echo "=== dep_root/lib ==="; ls -la dep_root/lib | grep -iE "irecov|usb|imobile|plist|mux" || ls dep_root/lib
+          echo "=== libirecovery / libusb present? ==="
+          ls dep_root/lib/*irecov* dep_root/lib/*usb* 2>/dev/null || echo "(none in bundle -> using clang64 pacman libs)"
       - name: Configure
         run: |
           cmake -DCMAKE_BUILD_TYPE=Release -DNO_PKGCFG=ON -DARCH=x86_64 \
